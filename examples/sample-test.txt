@@ -1,0 +1,25 @@
+=== BEGIN MOCK TEST ===
+TEST_TITLE: Computer Networks - Quick Practice
+SUBJECT: Computer Networks
+TOTAL_QUESTIONS: 2
+MARKS_PER_CORRECT: 2
+NEGATIVE_MARKS_PER_WRONG: 0.5
+TOTAL_MARKS: 6
+TIME_LIMIT_MINUTES: 5
+INSTRUCTIONS: Select one option per question. Q2 carries 4 marks.
+
+SECTION: Fundamentals
+SECTION_NOTE: Read each question carefully.
+
+Q1. [Topic: UDP] What is the size of a UDP header, excluding application data?
+A. 4 bytes
+B. 8 bytes
+C. 16 bytes
+D. 20 bytes
+
+Q2. [Topic: Transmission delay] [Marks: 4] How long does it take to transmit 12,000 bits over a 6 Mbps link, ignoring other delays?
+A. 0.5 ms
+B. 1 ms
+C. 2 ms
+D. 12 ms
+=== END MOCK TEST ===

@@ -1,0 +1,98 @@
+MOCK TEST FORMAT - INSTRUCTIONS FOR THE AI
+============================================================
+You are generating a multiple-choice mock test that will be imported into a mock-test website. The website reads your output with an automatic parser, so follow the format below EXACTLY.
+
+
+1. WHAT I WANT YOU TO GENERATE
+------------------------------------------------------------
+(Replace the [bracketed] items with my requirements. If I leave something blank, choose sensible defaults.)
+
+- Topic / subject / syllabus: [WRITE YOUR TOPIC HERE]
+- Number of questions: [e.g. 50]
+- Difficulty: [e.g. easy / medium / hard / mixed]
+- Marks per correct answer: [e.g. 2]
+- Negative marks per wrong answer: [e.g. 0 or 0.5]
+- Time limit in minutes: [e.g. 60, or 0 for no time limit]
+- Sections: [e.g. 3 sections - Fundamentals, Conceptual, Numerical - or "no sections"]
+
+
+2. OUTPUT RULES
+------------------------------------------------------------
+1. Output ONLY the test, written between the two marker lines
+   === BEGIN MOCK TEST ===   and   === END MOCK TEST ===
+   Put it all inside ONE plain-text code block so it copies cleanly. Write nothing before or after it.
+2. Do NOT include answers, answer keys, hints, or explanations anywhere. I will check my answers separately.
+3. No markdown styling: no bold, italics, tables, "#" headings, or LaTeX. Write maths in plain text, for example: 2 x 10^8, x^2, sqrt(5), 3/4, 10 Mbps.
+4. Every question has between 2 and 6 options, labelled A., B., C., D. (and E., F. if needed), each on its own line. Exactly one option must be correct, but do not say which.
+5. Number the questions consecutively as Q1., Q2., Q3. ... across the WHOLE test. Do not restart the numbering in each section.
+6. A question may span several lines (for example a small table, a code snippet, or a list). Write those extra lines directly under the "Q" line, before option A.
+7. Leave one blank line between questions.
+8. Optional tags, written right after the question number on the same line:
+   [Topic: short topic name]   - shown above the question
+   [Marks: n]                  - only if this question is worth a different number of marks than the default
+9. The header lines at the top must keep exactly these names. TOTAL_QUESTIONS and TOTAL_MARKS must match the questions you actually write
+   (TOTAL_MARKS = sum of marks of all questions).
+10. Sections are optional. Start each one with a line "SECTION: name". An optional line "SECTION_NOTE: text" can follow it.
+    If there are no sections, leave the SECTION lines out.
+11. Make the distractors (wrong options) plausible, avoid "all of the above" / "none of the above", and vary the position of the correct answer.
+
+
+3. THE FORMAT (the example below only shows the layout - write real questions on my topic)
+------------------------------------------------------------
+=== BEGIN MOCK TEST ===
+TEST_TITLE: Computer Networks - Mock Test 3
+SUBJECT: Computer Networks
+TOTAL_QUESTIONS: 4
+MARKS_PER_CORRECT: 2
+NEGATIVE_MARKS_PER_WRONG: 0
+TOTAL_MARKS: 10
+TIME_LIMIT_MINUTES: 0
+INSTRUCTIONS: Choose one option per question. Each correct answer carries 2 marks (Q3 carries 4). There is no negative marking.
+
+SECTION: Section A - Fundamentals
+SECTION_NOTE: Questions 1 and 2. Read each question carefully.
+
+Q1. [Topic: Transmission delay] A packet of 12,000 bits is sent over a 6 Mbps link. Ignoring other delays, what is the transmission delay?
+A. 0.5 ms
+B. 1 ms
+C. 2 ms
+D. 12 ms
+
+Q2. [Topic: UDP] What is the size of the standard UDP header, excluding application data?
+A. 4 bytes
+B. 8 bytes
+C. 16 bytes
+D. 20 bytes
+
+SECTION: Section B - Scenario-Based
+
+Q3. [Topic: Forwarding] [Marks: 4] A router has the following forwarding table:
+
+Destination prefix    Output port
+10.0.0.0/8            Port 1
+10.1.0.0/16           Port 2
+10.1.2.0/24           Port 3
+
+A packet arrives for 10.1.2.99. Which output port is selected?
+A. Port 1
+B. Port 2
+C. Port 3
+D. No matching entry
+
+Q4. Which statement about TCP is correct?
+A. It is connectionless.
+B. It provides reliable, in-order delivery.
+C. It never retransmits segments.
+D. It has no flow control.
+=== END MOCK TEST ===
+
+(In this example Q3 is worth 4 marks, so TOTAL_MARKS = 2 + 2 + 4 + 2 = 10. A real file must add up its own marks the same way.)
+
+
+4. FINAL CHECK BEFORE YOU ANSWER
+------------------------------------------------------------
+- The output starts with === BEGIN MOCK TEST === and ends with === END MOCK TEST ===
+- Questions run Q1 ... Qn without gaps or repeats
+- Every question has options A, B, ... in order, one per line
+- There is NO answer key, no explanations, no commentary
+- TOTAL_QUESTIONS and TOTAL_MARKS are correct
