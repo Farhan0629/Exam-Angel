@@ -8,7 +8,7 @@
 
 Take a built-in Computer Networks test, or generate a test with your preferred AI assistant and import it in plain text. Answer at your own pace, flag questions with notes, and export your attempt for feedback.
 
-> The application currently displays **Mock Test Studio** in its interface. Exam Angel is the repository name. This repository includes the supplied application unchanged, with a conventional `index.html` entry point.
+> The application currently displays **Mock Test Studio** in its interface. Exam Angel is the repository name. The application lives in `index.html` and supports both single-answer and multiple-answer questions in the same test.
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Import format](#mock-test-import-format) · [Privacy & limitations](#privacy--limitations) · [Deploy](#deploy-to-github-pages)
 
@@ -24,6 +24,7 @@ Take a built-in Computer Networks test, or generate a test with your preferred A
 | Feature | What it does |
 | --- | --- |
 | Built-in practice | Two Computer Networks mock papers, with 50 questions each and three sections. |
+| Mixed question types | Single-answer radio buttons and multiple-answer checkboxes, with explicit per-question selection instructions. |
 | Custom test imports | Paste AI-generated text or upload a `.txt` file. |
 | Import preview | Inspect detected questions, sections, marks, and parser warnings before adding a test. |
 | Test setup | Configure the title, marks per correct answer, negative marking, and time limit for imported tests. |
@@ -79,11 +80,14 @@ On the home screen, choose a built-in paper and select **Start test**. These pap
 6. Review the preview and warnings. Invalid questions may be skipped; verify the resulting count and content.
 7. Select **Add to My Tests & set up**, adjust the settings, and start.
 
-To try the importer immediately, use [`examples/sample-test.txt`](examples/sample-test.txt). It contains two questions with a five-minute limit and a per-question mark override.
+To try the importer immediately, use [`examples/sample-test.txt`](examples/sample-test.txt). It contains one single-answer question and one multiple-answer question, with a five-minute limit and a per-question mark override.
 
 ### 3. Practice and review
 
-- Select one option per question; use **Clear answer** to remove a selection.
+- **Single-answer questions:** select one radio option; choosing another replaces your selection.
+- **Multiple-answer questions:** select all correct options using checkboxes; selecting a checked option again deselects it.
+- Use **Clear answer** to remove every selection for the current question. Deselecting the last checkbox makes the question unanswered.
+- Progress and summary counts count questions, not the number of checked options.
 - Use **Mark for review** to flag a question and add a comment.
 - Navigate with the grid, Previous/Next buttons, or keyboard shortcuts.
 - Return to the test list and use **Resume** to continue saved progress.
@@ -95,7 +99,7 @@ On the submission screen, select **Download answers (.txt)** or **Copy to clipbo
 
 - Test title, export timestamp, and tracked time taken.
 - Answered, unanswered, and marked-for-review counts.
-- Full question text and options, plus your selected answer.
+- Full question text, type (`single` or `multiple`), and options, plus all selected letters in a stable order (for example `A, C`).
 - Section labels, question-specific marks, and review comments.
 - Marking instructions and a request for explanations, section scores, and revision topics.
 
@@ -109,11 +113,13 @@ While the test screen is active and you are not typing in a text field:
 | --- | --- |
 | `←` | Previous question |
 | `→` | Next question |
-| `1`–`6` | Select the corresponding available option, A–F |
+| `1`–`6` | Select A–F for a single-answer question; toggle A–F for a multiple-answer question |
+| `Tab` / `Shift+Tab` | Move focus between controls |
+| `Space` | Activate a focused option (toggle a checkbox or select a radio) |
 
 ## Mock-test import format
 
-Use plain text, consecutive question numbers, and 2–6 options labeled A–F, one option per line. Prefer the exact markers and header names shown below.
+Use plain text, consecutive question numbers, and 2–6 options labeled A–F, one option per line. Add `[Type: multiple]` to the question line to enable multiple selections. `[Type: single]` is optional: questions without a type remain single-answer, including legacy imports and the built-in papers. Prefer the exact markers and header names shown below.
 
 ```text
 === BEGIN MOCK TEST ===
@@ -124,7 +130,7 @@ MARKS_PER_CORRECT: 2
 NEGATIVE_MARKS_PER_WRONG: 0.5
 TOTAL_MARKS: 6
 TIME_LIMIT_MINUTES: 10
-INSTRUCTIONS: Choose one option for each question.
+INSTRUCTIONS: Choose one option for single-answer questions and all correct options for multiple-answer questions. Exact match, no partial credit.
 
 SECTION: Fundamentals
 SECTION_NOTE: Read carefully.
@@ -135,11 +141,11 @@ B. 8 bytes
 C. 16 bytes
 D. 20 bytes
 
-Q2. [Topic: TCP] [Marks: 4] Which transport protocol provides reliable, in-order delivery?
-A. UDP
-B. TCP
-C. IP
-D. ICMP
+Q2. [Type: multiple] [Topic: TCP] [Marks: 4] Which statements describe TCP? Select all correct options.
+A. It provides reliable, in-order delivery.
+B. It is connectionless.
+C. It supports flow control.
+D. It never retransmits segments.
 === END MOCK TEST ===
 ```
 
@@ -156,8 +162,24 @@ D. ICMP
 | `TIME_LIMIT_MINUTES` | Whole-minute countdown; `0` means stopwatch only. |
 | `INSTRUCTIONS` | Instructions retained in the exported report. |
 | `SECTION` / `SECTION_NOTE` | Optional section heading and note. |
+| `[Type: single]` / `[Type: multiple]` | Selection mode for this question; omitted means single. Use only one Type tag. Values are case-insensitive. |
 | `[Topic: ...]` | Optional topic shown above the question. |
 | `[Marks: n]` | Optional per-question mark override. |
+
+Unsupported or duplicate Type tags block import with an error instead of silently changing the selection mode. Malformed tags such as `[Type multiple]` also block import. Correct them to `[Type: multiple]` or `[Type: single]` and review the preview before adding the test. The preview reports the multiple-answer question count and labels each previewed question's type.
+
+### Multiple-answer grading policy
+
+The app still does **not** grade locally. Exported instructions tell the external checker to apply these rules:
+
+- A single-answer question is correct only when its selected option is correct.
+- A multiple-answer question is correct only when the selected set exactly matches the correct set, regardless of selection order.
+- Missing a correct option or choosing an extra option makes the entire question wrong; **no partial credit**.
+- Award the question's mark override, or the configured default, for a correct question.
+- Apply the configured wrong-answer penalty **once per question**, never once per selected option.
+- A question with no selected options is unanswered and receives 0 marks.
+
+The AI generation instructions request at least two correct options for multiple-answer questions. The importer cannot verify this without an answer key; validate the generated content independently.
 
 Questions can have multiline text before option A. Use plain-text math such as `x^2`, `sqrt(5)`, or `10 Mbps`; there is no LaTeX renderer. Do not include answer keys or explanations. The parser ignores some answer/explanation lines, but it is not a general-purpose content sanitizer or question-quality checker.
 
@@ -174,8 +196,10 @@ Questions can have multiline text before option A. Use plain-text math such as `
 | Key | Contents |
 | --- | --- |
 | `mocktest_library_v1` | Imported tests and their settings. |
-| `mocktest_v2_<test-id>` | Current attempt: selected answers, flags, comments, current position, elapsed time, and submission state. |
+| `mocktest_v2_<test-id>` | Current attempt: selected option-index arrays, flags, comments, current position, elapsed time, and submission state. Old numeric single-answer selections are converted to one-element arrays on load. |
 | `mocktest1_state_v1` | Legacy attempt key read for the first built-in test when needed. |
+
+Existing storage keys are retained, so previous single-answer progress remains available. Loading an attempt filters duplicate, out-of-range, and invalid selection values. Empty arrays are treated as unanswered. Multiple selections are sorted for consistent exports. Older app versions do not understand the new array format: avoid switching back to an old application version after saving an updated attempt.
 
 ## Privacy & limitations
 
@@ -185,24 +209,24 @@ Questions can have multiline text before option A. Use plain-text math such as `
 - If storage is blocked or full, persistence may fail. Keep original import files and export important attempts.
 - Clipboard access can be blocked by browser permissions or insecure contexts. Use the download buttons instead.
 - Any report you manually send to an external AI service is subject to that service's privacy terms.
-- Imported tests contain no reliable ground-truth answer key; neither the app nor the parser verifies factual accuracy or that exactly one option is correct.
+- Imported tests contain no reliable ground-truth answer key; neither the app nor the parser verifies factual accuracy or the correct number of valid options for either question type.
 - This is a personal practice tool, not a secure exam platform. It has no authentication, proctoring, server-side enforcement, or protected assessment records.
 
 ## Repository structure
 
 ```text
 Exam-Angel/
-├── index.html                     # Main entry point; copy of the supplied app
-├── mock_test-4.html                # Original uploaded HTML, preserved unchanged
+├── index.html                     # Main application (HTML, CSS, vanilla JavaScript)
 ├── README.md                      # Setup, usage, format, and limitations
+├── .gitignore                     # Excludes optional local test dependencies/output
 ├── assets/
 │   └── readme-banner.svg          # Custom, editable vector README banner
-└── examples/
-    ├── mock-test-format.txt        # AI instructions extracted from the app
-    └── sample-test.txt             # Ready-to-import example
+├── examples/
+│   ├── mock-test-format.txt        # AI instructions, kept in sync with the app
+│   └── sample-test.txt             # Mixed single/multiple-answer sample
+└── tests/
+    └── regression.cjs              # Optional Playwright browser regression suite
 ```
-
-`index.html` and `mock_test-4.html` initially have identical contents. Use `index.html` for development and hosting; the second file preserves the original upload.
 
 ## Deploy to GitHub Pages
 
@@ -224,12 +248,25 @@ Suggested checks after making changes:
 - Open the home screen and start both built-in papers.
 - Import the sample file; confirm two questions, six total marks, and a five-minute countdown.
 - Check malformed imports, missing fields, and preview warnings.
-- Select/clear answers, add a review comment, navigate, reload, and resume.
+- Select/clear single and multiple answers, add a review comment, navigate, reload, and resume.
+- Verify old numeric answers still load, unknown types fail import, and exports list every selected letter.
 - Submit manually and confirm the exported report contains your selections and notes.
 - Test countdown auto-submission and hidden-tab timing behavior.
 - Check narrow mobile layouts and both system color schemes.
 
-There is no bundled automated test runner or package-manager configuration.
+### Run the browser regression tests (optional)
+
+The application itself remains dependency-free. The development-only test suite requires Node.js 20+ and Playwright:
+
+```bash
+npm install --no-save --package-lock=false playwright
+npx playwright install chromium
+node tests/regression.cjs
+```
+
+To use an existing Chromium installation, set `CHROMIUM_PATH` to its executable path. Set `QA_DIR` to a directory if you also want screenshots. The suite uses a temporary local server and isolated browser context; it does not modify repository content or your real browser's saved data.
+
+Coverage includes legacy saved-answer migration, mixed imports, invalid type tags, radio/checkbox behavior, mouse and keyboard toggling, unanswered counts, navigation, review notes, reload/resume, manual and automatic submission, exports/downloads, clipboard copying, and narrow-screen overflow checks.
 
 ## Contributing
 

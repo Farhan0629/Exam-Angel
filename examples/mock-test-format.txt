@@ -13,6 +13,7 @@ You are generating a multiple-choice mock test that will be imported into a mock
 - Marks per correct answer: [e.g. 2]
 - Negative marks per wrong answer: [e.g. 0 or 0.5]
 - Time limit in minutes: [e.g. 60, or 0 for no time limit]
+- Question types: [single-answer / multiple-answer / mixed; default single-answer]
 - Sections: [e.g. 3 sections - Fundamentals, Conceptual, Numerical - or "no sections"]
 
 
@@ -23,11 +24,12 @@ You are generating a multiple-choice mock test that will be imported into a mock
    Put it all inside ONE plain-text code block so it copies cleanly. Write nothing before or after it.
 2. Do NOT include answers, answer keys, hints, or explanations anywhere. I will check my answers separately.
 3. No markdown styling: no bold, italics, tables, "#" headings, or LaTeX. Write maths in plain text, for example: 2 x 10^8, x^2, sqrt(5), 3/4, 10 Mbps.
-4. Every question has between 2 and 6 options, labelled A., B., C., D. (and E., F. if needed), each on its own line. Exactly one option must be correct, but do not say which.
+4. Every question has between 2 and 6 options, labelled A., B., C., D. (and E., F. if needed), each on its own line. For single-answer questions exactly one option must be correct. For multiple-answer questions two or more options must be correct. Do not say which options are correct.
 5. Number the questions consecutively as Q1., Q2., Q3. ... across the WHOLE test. Do not restart the numbering in each section.
 6. A question may span several lines (for example a small table, a code snippet, or a list). Write those extra lines directly under the "Q" line, before option A.
 7. Leave one blank line between questions.
 8. Optional tags, written right after the question number on the same line:
+   [Type: single] or [Type: multiple] - choose one; required for every multiple-answer question. Omitted Type means single-answer for backward compatibility. Never use other Type values or more than one Type tag.
    [Topic: short topic name]   - shown above the question
    [Marks: n]                  - only if this question is worth a different number of marks than the default
 9. The header lines at the top must keep exactly these names. TOTAL_QUESTIONS and TOTAL_MARKS must match the questions you actually write
@@ -47,7 +49,7 @@ MARKS_PER_CORRECT: 2
 NEGATIVE_MARKS_PER_WRONG: 0
 TOTAL_MARKS: 10
 TIME_LIMIT_MINUTES: 0
-INSTRUCTIONS: Choose one option per question. Each correct answer carries 2 marks (Q3 carries 4). There is no negative marking.
+INSTRUCTIONS: Choose one option for single-answer questions and all correct options for multiple-answer questions. Multiple-answer questions require an exact match, with no partial credit; a wrong-answer penalty applies once per question. Each correct answer carries 2 marks (Q3 carries 4). There is no negative marking.
 
 SECTION: Section A - Fundamentals
 SECTION_NOTE: Questions 1 and 2. Read each question carefully.
@@ -79,11 +81,11 @@ B. Port 2
 C. Port 3
 D. No matching entry
 
-Q4. Which statement about TCP is correct?
+Q4. [Type: multiple] Which statements about TCP are correct? Select all correct options.
 A. It is connectionless.
 B. It provides reliable, in-order delivery.
 C. It never retransmits segments.
-D. It has no flow control.
+D. It supports flow control.
 === END MOCK TEST ===
 
 (In this example Q3 is worth 4 marks, so TOTAL_MARKS = 2 + 2 + 4 + 2 = 10. A real file must add up its own marks the same way.)
@@ -94,5 +96,7 @@ D. It has no flow control.
 - The output starts with === BEGIN MOCK TEST === and ends with === END MOCK TEST ===
 - Questions run Q1 ... Qn without gaps or repeats
 - Every question has options A, B, ... in order, one per line
+- Every multiple-answer question has [Type: multiple] and at least two correct options; single-answer questions have one correct option
+- Multiple-answer grading is exact-set match: no partial credit, wrong-answer penalty once per question, unanswered = 0
 - There is NO answer key, no explanations, no commentary
 - TOTAL_QUESTIONS and TOTAL_MARKS are correct

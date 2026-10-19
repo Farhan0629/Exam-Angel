@@ -45,6 +45,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .qtext{white-space:pre-wrap;font-size:1.05rem;margin:0 0 16px;font-weight:500}
 .note{font-size:.85rem;color:var(--muted);font-style:italic;margin:-8px 0 14px}
 .opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;margin-bottom:10px;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--card)}
+.opt{cursor:pointer}
+.opt input{flex:none;width:18px;height:18px;margin:4px 0 0;accent-color:var(--accent)}
+.opt:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 .opt .l{flex:none;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);display:grid;place-items:center;font-size:.85rem;font-weight:600}
 .opt.sel{border-color:var(--accent);background:var(--accent-soft)}
 .opt.sel .l{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -130,6 +133,7 @@ textarea.paste:focus,.field input:focus{outline:none;border-color:var(--accent)}
 
     <ul class="small">
       <li>The timer starts when you start. If a time limit is set it counts down and auto-submits; otherwise it just tracks how long you take.</li>
+      <li>Single-answer questions use radio buttons. Multiple-answer questions use checkboxes: select all correct options.</li>
       <li><b>Mark for review</b> lets you add an optional comment.</li>
       <li>On submit, download a <b>.txt</b> (answers, comments, time taken) for your AI to check.</li>
     </ul>
@@ -227,7 +231,8 @@ textarea.paste:focus,.field input:focus{outline:none;border-color:var(--accent)}
         <p class="topic" id="topicLabel"></p>
         <p class="qtext" id="qText"></p>
         <p class="note hidden" id="qNote"></p>
-        <div id="opts"></div>
+        <p class="small muted" id="selectionHelp"></p>
+        <div id="opts" role="group" aria-labelledby="qText selectionHelp"></div>
 
         <div class="cbox hidden" id="cbox">
           <label for="comment">Comment for review (optional)</label>
@@ -425,7 +430,7 @@ const TESTS = {
 };
 
 
-const FORMAT_TXT = "MOCK TEST FORMAT - INSTRUCTIONS FOR THE AI\n============================================================\nYou are generating a multiple-choice mock test that will be imported into a mock-test website. The website reads your output with an automatic parser, so follow the format below EXACTLY.\n\n\n1. WHAT I WANT YOU TO GENERATE\n------------------------------------------------------------\n(Replace the [bracketed] items with my requirements. If I leave something blank, choose sensible defaults.)\n\n- Topic / subject / syllabus: [WRITE YOUR TOPIC HERE]\n- Number of questions: [e.g. 50]\n- Difficulty: [e.g. easy / medium / hard / mixed]\n- Marks per correct answer: [e.g. 2]\n- Negative marks per wrong answer: [e.g. 0 or 0.5]\n- Time limit in minutes: [e.g. 60, or 0 for no time limit]\n- Sections: [e.g. 3 sections - Fundamentals, Conceptual, Numerical - or \"no sections\"]\n\n\n2. OUTPUT RULES\n------------------------------------------------------------\n1. Output ONLY the test, written between the two marker lines\n   === BEGIN MOCK TEST ===   and   === END MOCK TEST ===\n   Put it all inside ONE plain-text code block so it copies cleanly. Write nothing before or after it.\n2. Do NOT include answers, answer keys, hints, or explanations anywhere. I will check my answers separately.\n3. No markdown styling: no bold, italics, tables, \"#\" headings, or LaTeX. Write maths in plain text, for example: 2 x 10^8, x^2, sqrt(5), 3/4, 10 Mbps.\n4. Every question has between 2 and 6 options, labelled A., B., C., D. (and E., F. if needed), each on its own line. Exactly one option must be correct, but do not say which.\n5. Number the questions consecutively as Q1., Q2., Q3. ... across the WHOLE test. Do not restart the numbering in each section.\n6. A question may span several lines (for example a small table, a code snippet, or a list). Write those extra lines directly under the \"Q\" line, before option A.\n7. Leave one blank line between questions.\n8. Optional tags, written right after the question number on the same line:\n   [Topic: short topic name]   - shown above the question\n   [Marks: n]                  - only if this question is worth a different number of marks than the default\n9. The header lines at the top must keep exactly these names. TOTAL_QUESTIONS and TOTAL_MARKS must match the questions you actually write\n   (TOTAL_MARKS = sum of marks of all questions).\n10. Sections are optional. Start each one with a line \"SECTION: name\". An optional line \"SECTION_NOTE: text\" can follow it.\n    If there are no sections, leave the SECTION lines out.\n11. Make the distractors (wrong options) plausible, avoid \"all of the above\" / \"none of the above\", and vary the position of the correct answer.\n\n\n3. THE FORMAT (the example below only shows the layout - write real questions on my topic)\n------------------------------------------------------------\n=== BEGIN MOCK TEST ===\nTEST_TITLE: Computer Networks - Mock Test 3\nSUBJECT: Computer Networks\nTOTAL_QUESTIONS: 4\nMARKS_PER_CORRECT: 2\nNEGATIVE_MARKS_PER_WRONG: 0\nTOTAL_MARKS: 10\nTIME_LIMIT_MINUTES: 0\nINSTRUCTIONS: Choose one option per question. Each correct answer carries 2 marks (Q3 carries 4). There is no negative marking.\n\nSECTION: Section A - Fundamentals\nSECTION_NOTE: Questions 1 and 2. Read each question carefully.\n\nQ1. [Topic: Transmission delay] A packet of 12,000 bits is sent over a 6 Mbps link. Ignoring other delays, what is the transmission delay?\nA. 0.5 ms\nB. 1 ms\nC. 2 ms\nD. 12 ms\n\nQ2. [Topic: UDP] What is the size of the standard UDP header, excluding application data?\nA. 4 bytes\nB. 8 bytes\nC. 16 bytes\nD. 20 bytes\n\nSECTION: Section B - Scenario-Based\n\nQ3. [Topic: Forwarding] [Marks: 4] A router has the following forwarding table:\n\nDestination prefix    Output port\n10.0.0.0/8            Port 1\n10.1.0.0/16           Port 2\n10.1.2.0/24           Port 3\n\nA packet arrives for 10.1.2.99. Which output port is selected?\nA. Port 1\nB. Port 2\nC. Port 3\nD. No matching entry\n\nQ4. Which statement about TCP is correct?\nA. It is connectionless.\nB. It provides reliable, in-order delivery.\nC. It never retransmits segments.\nD. It has no flow control.\n=== END MOCK TEST ===\n\n(In this example Q3 is worth 4 marks, so TOTAL_MARKS = 2 + 2 + 4 + 2 = 10. A real file must add up its own marks the same way.)\n\n\n4. FINAL CHECK BEFORE YOU ANSWER\n------------------------------------------------------------\n- The output starts with === BEGIN MOCK TEST === and ends with === END MOCK TEST ===\n- Questions run Q1 ... Qn without gaps or repeats\n- Every question has options A, B, ... in order, one per line\n- There is NO answer key, no explanations, no commentary\n- TOTAL_QUESTIONS and TOTAL_MARKS are correct\n";
+const FORMAT_TXT = "MOCK TEST FORMAT - INSTRUCTIONS FOR THE AI\n============================================================\nYou are generating a multiple-choice mock test that will be imported into a mock-test website. The website reads your output with an automatic parser, so follow the format below EXACTLY.\n\n\n1. WHAT I WANT YOU TO GENERATE\n------------------------------------------------------------\n(Replace the [bracketed] items with my requirements. If I leave something blank, choose sensible defaults.)\n\n- Topic / subject / syllabus: [WRITE YOUR TOPIC HERE]\n- Number of questions: [e.g. 50]\n- Difficulty: [e.g. easy / medium / hard / mixed]\n- Marks per correct answer: [e.g. 2]\n- Negative marks per wrong answer: [e.g. 0 or 0.5]\n- Time limit in minutes: [e.g. 60, or 0 for no time limit]\n- Question types: [single-answer / multiple-answer / mixed; default single-answer]\n- Sections: [e.g. 3 sections - Fundamentals, Conceptual, Numerical - or \"no sections\"]\n\n\n2. OUTPUT RULES\n------------------------------------------------------------\n1. Output ONLY the test, written between the two marker lines\n   === BEGIN MOCK TEST ===   and   === END MOCK TEST ===\n   Put it all inside ONE plain-text code block so it copies cleanly. Write nothing before or after it.\n2. Do NOT include answers, answer keys, hints, or explanations anywhere. I will check my answers separately.\n3. No markdown styling: no bold, italics, tables, \"#\" headings, or LaTeX. Write maths in plain text, for example: 2 x 10^8, x^2, sqrt(5), 3/4, 10 Mbps.\n4. Every question has between 2 and 6 options, labelled A., B., C., D. (and E., F. if needed), each on its own line. For single-answer questions exactly one option must be correct. For multiple-answer questions two or more options must be correct. Do not say which options are correct.\n5. Number the questions consecutively as Q1., Q2., Q3. ... across the WHOLE test. Do not restart the numbering in each section.\n6. A question may span several lines (for example a small table, a code snippet, or a list). Write those extra lines directly under the \"Q\" line, before option A.\n7. Leave one blank line between questions.\n8. Optional tags, written right after the question number on the same line:\n   [Type: single] or [Type: multiple] - choose one; required for every multiple-answer question. Omitted Type means single-answer for backward compatibility. Never use other Type values or more than one Type tag.\n   [Topic: short topic name]   - shown above the question\n   [Marks: n]                  - only if this question is worth a different number of marks than the default\n9. The header lines at the top must keep exactly these names. TOTAL_QUESTIONS and TOTAL_MARKS must match the questions you actually write\n   (TOTAL_MARKS = sum of marks of all questions).\n10. Sections are optional. Start each one with a line \"SECTION: name\". An optional line \"SECTION_NOTE: text\" can follow it.\n    If there are no sections, leave the SECTION lines out.\n11. Make the distractors (wrong options) plausible, avoid \"all of the above\" / \"none of the above\", and vary the position of the correct answer.\n\n\n3. THE FORMAT (the example below only shows the layout - write real questions on my topic)\n------------------------------------------------------------\n=== BEGIN MOCK TEST ===\nTEST_TITLE: Computer Networks - Mock Test 3\nSUBJECT: Computer Networks\nTOTAL_QUESTIONS: 4\nMARKS_PER_CORRECT: 2\nNEGATIVE_MARKS_PER_WRONG: 0\nTOTAL_MARKS: 10\nTIME_LIMIT_MINUTES: 0\nINSTRUCTIONS: Choose one option for single-answer questions and all correct options for multiple-answer questions. Multiple-answer questions require an exact match, with no partial credit; a wrong-answer penalty applies once per question. Each correct answer carries 2 marks (Q3 carries 4). There is no negative marking.\n\nSECTION: Section A - Fundamentals\nSECTION_NOTE: Questions 1 and 2. Read each question carefully.\n\nQ1. [Topic: Transmission delay] A packet of 12,000 bits is sent over a 6 Mbps link. Ignoring other delays, what is the transmission delay?\nA. 0.5 ms\nB. 1 ms\nC. 2 ms\nD. 12 ms\n\nQ2. [Topic: UDP] What is the size of the standard UDP header, excluding application data?\nA. 4 bytes\nB. 8 bytes\nC. 16 bytes\nD. 20 bytes\n\nSECTION: Section B - Scenario-Based\n\nQ3. [Topic: Forwarding] [Marks: 4] A router has the following forwarding table:\n\nDestination prefix    Output port\n10.0.0.0/8            Port 1\n10.1.0.0/16           Port 2\n10.1.2.0/24           Port 3\n\nA packet arrives for 10.1.2.99. Which output port is selected?\nA. Port 1\nB. Port 2\nC. Port 3\nD. No matching entry\n\nQ4. [Type: multiple] Which statements about TCP are correct? Select all correct options.\nA. It is connectionless.\nB. It provides reliable, in-order delivery.\nC. It never retransmits segments.\nD. It supports flow control.\n=== END MOCK TEST ===\n\n(In this example Q3 is worth 4 marks, so TOTAL_MARKS = 2 + 2 + 4 + 2 = 10. A real file must add up its own marks the same way.)\n\n\n4. FINAL CHECK BEFORE YOU ANSWER\n------------------------------------------------------------\n- The output starts with === BEGIN MOCK TEST === and ends with === END MOCK TEST ===\n- Questions run Q1 ... Qn without gaps or repeats\n- Every question has options A, B, ... in order, one per line\n- Every multiple-answer question has [Type: multiple] and at least two correct options; single-answer questions have one correct option\n- Multiple-answer grading is exact-set match: no partial credit, wrong-answer penalty once per question, unanswered = 0\n- There is NO answer key, no explanations, no commentary\n- TOTAL_QUESTIONS and TOTAL_MARKS are correct\n";
 
 const L = ["A","B","C","D","E","F"];
 const $ = id => document.getElementById(id);
@@ -462,12 +467,37 @@ const num = x => { const r = Math.round(x * 100) / 100; return String(r); };
 /* ---------- attempt storage ---------- */
 const keyOf = id => "mocktest_v2_" + id;
 function blank(){ return {cur:0, answers:{}, marked:{}, comments:{}, submitted:false, elapsed:0, started:false}; }
+// Untagged legacy questions remain single-answer. Numeric saved answers remain readable.
+const isMultiple = q => q && q.type === "multiple";
+function selectedOptions(q, raw){
+  const values = Array.isArray(raw) ? raw : (Number.isInteger(raw) ? [raw] : []);
+  const valid = [...new Set(values.filter(k => Number.isInteger(k) && k >= 0 && q && k < q.o.length))].sort((a,b) => a-b);
+  return isMultiple(q) ? valid : valid.slice(0, 1);
+}
+const answerFor = i => selectedOptions(Q[i], st && st.answers && st.answers[i]);
+const answerText = (i, empty = "NOT ANSWERED") => answerFor(i).map(k => L[k]).join(", ") || empty;
+function selectAnswer(i, k){
+  if (!Q[i] || !Number.isInteger(k) || k < 0 || k >= Q[i].o.length) return;
+  let values = answerFor(i);
+  values = isMultiple(Q[i]) ? (values.includes(k) ? values.filter(v => v !== k) : [...values, k].sort((a,b)=>a-b)) : [k];
+  if (values.length) st.answers[i] = values; else delete st.answers[i];
+  save(); render();
+  const input = $("opts").querySelectorAll("input")[k];
+  if (input) input.focus({preventScroll:true});
+}
 function loadState(id){
   try{
     let s = localStorage.getItem(keyOf(id));
     if (!s && String(id) === "1") s = localStorage.getItem("mocktest1_state_v1"); // old version of this app
     if (!s) return null;
     const o = Object.assign(blank(), JSON.parse(s));
+    const questions = (getTest(id) || {}).Q || [];
+    const previous = o.answers && typeof o.answers === "object" ? o.answers : {};
+    o.answers = {};
+    questions.forEach((q, i) => {
+      const values = selectedOptions(q, previous[i]);
+      if (values.length) o.answers[i] = values;
+    });
     o.started = o.started || Object.keys(o.answers).length > 0 || o.submitted || o.elapsed > 0;
     return o;
   }catch(e){ return null; }
@@ -479,7 +509,7 @@ function dropState(id){ try{ localStorage.removeItem(keyOf(id)); }catch(e){} }
 const SCREENS = ["home","import","setup","test","done"];
 function show(id){ SCREENS.forEach(x => $(x).classList.toggle("hidden", x !== id)); window.scrollTo(0,0); }
 const secOf = n => SECS.find(s => n >= s.from && n <= s.to) || SECS[SECS.length - 1];
-const answeredN = () => Object.keys(st.answers).length;
+const answeredN = () => Q.filter((_, i) => answerFor(i).length > 0).length;
 const markedN = () => Object.keys(st.marked).filter(k => st.marked[k]).length;
 function fmt(ms){
   const s = Math.floor(ms / 1000), p = x => String(x).padStart(2, "0");
@@ -594,12 +624,19 @@ function parseTest(raw){
         if (lastNum && n !== lastNum + 1) warn("Numbering jumps from Q" + lastNum + " to Q" + n + " (line " + ln + "). Questions are renumbered in order.");
         lastNum = n;
         if (!curSec){ curSec = {name:"Questions", note:""}; sections.push(curSec); }
-        let rest = m[3] || "", topic = "", marks = null;
-        rest = rest.replace(/\[\s*(Topic|Marks?)\s*:\s*([^\]]*)\]/gi, (_, k, v) => {
-          if (/^topic$/i.test(k)) topic = v.trim(); else { const x = parseFloat(v); if (!isNaN(x)) marks = x; }
+        let rest = m[3] || "", topic = "", marks = null, type = "single", typeSeen = false;
+        rest = rest.replace(/\[\s*(Topic|Marks?|Type)\s*:\s*([^\]]*)\]/gi, (_, k, v) => {
+          if (/^type$/i.test(k)) {
+            const value = v.trim().toLowerCase();
+            if (typeSeen) err("Q" + n + " has more than one Type tag. Use exactly one [Type: single] or [Type: multiple].");
+            typeSeen = true;
+            if (value === "single" || value === "multiple") type = value;
+            else err("Q" + n + " has an unsupported Type: " + v.trim() + ". Use single or multiple.");
+          } else if (/^topic$/i.test(k)) topic = v.trim(); else { const x = parseFloat(v); if (!isNaN(x)) marks = x; }
           return "";
         }).trim();
-        cur = {srcNo:n, line:ln, sec:sections.length - 1, t:topic, m:marks, ql:rest ? [rest] : [], o:[]};
+        if (/\[\s*Type\b/i.test(rest)) err("Q" + n + " has a malformed Type tag. Use [Type: single] or [Type: multiple].");
+        cur = {srcNo:n, line:ln, sec:sections.length - 1, t:topic, m:marks, type, ql:rest ? [rest] : [], o:[]};
         return;
       }
     }
@@ -638,7 +675,7 @@ function parseTest(raw){
     if (!text){ warn("Q" + q.srcNo + " (line " + q.line + ") has no question text and was skipped."); return; }
     if (q.o.length < 2){ warn("Q" + q.srcNo + " (line " + q.line + ") has fewer than 2 options (A., B., …) and was skipped."); return; }
     if (q.o.some(o => !o)){ warn("Q" + q.srcNo + " (line " + q.line + ") has an empty option and was skipped."); return; }
-    const o = {q:text, o:q.o.slice(), _sec:q.sec};
+    const o = {q:text, o:q.o.slice(), type:q.type, _sec:q.sec};
     if (q.t) o.t = q.t;
     if (q.m !== null) o.m = q.m;
     good.push(o);
@@ -678,7 +715,7 @@ function parseTest(raw){
     instructions: (hdr.instr || "").trim(),
     settings, sections:secOut, Q:good
   };
-  return {ok: good.length > 0, test, issues};
+  return {ok: good.length > 0 && !issues.some(i => i.lv === "error"), test, issues};
 }
 
 /* ================== IMPORT SCREEN ================== */
@@ -701,7 +738,7 @@ function renderPreview(){
     const title = document.createElement("div"); title.style.fontWeight = "600"; title.textContent = t.title + (t.subject ? " · " + t.subject : "");
     p.appendChild(title);
     const chips = document.createElement("div"); chips.className = "chips";
-    [t.Q.length + " questions", t.sections.length + " section" + (t.sections.length === 1 ? "" : "s"),
+    [t.Q.length + " questions", t.Q.filter(isMultiple).length + " multiple-answer", t.sections.length + " section" + (t.sections.length === 1 ? "" : "s"),
      "+" + num(t.settings.mc) + " per correct", t.settings.neg ? "−" + num(t.settings.neg) + " per wrong" : "no negative marking",
      "total " + num(tot) + " marks", t.settings.time ? t.settings.time + " min limit" : "no time limit"
     ].forEach(x => { const c = document.createElement("span"); c.className = "chip"; c.textContent = x; chips.appendChild(c); });
@@ -717,7 +754,7 @@ function renderPreview(){
     det.appendChild(sum);
     t.Q.slice(0, 3).forEach((q, i) => {
       const pre = document.createElement("pre");
-      pre.textContent = "Q" + (i + 1) + ". " + q.q + "\n" + q.o.map((o, k) => "  " + L[k] + ". " + o).join("\n");
+      pre.textContent = "Q" + (i + 1) + ". [Type: " + (isMultiple(q) ? "multiple" : "single") + "] " + q.q + "\n" + q.o.map((o, k) => "  " + L[k] + ". " + o).join("\n");
       det.appendChild(pre);
     });
     pv.appendChild(det);
@@ -802,7 +839,7 @@ $("setupStart").onclick = () => {
 function metaFor(t, s){
   const base = t.Q.length + " questions";
   if (!s || !s.started) return base + " · not started" + (t.settings && t.settings.time ? " · " + t.settings.time + " min" : "");
-  const a = Object.keys(s.answers).length;
+  const a = t.Q.filter((q, i) => selectedOptions(q, s.answers[i]).length > 0).length;
   return (s.submitted ? "Submitted · " : "In progress · ") + a + "/" + t.Q.length + " answered · " + fmt(s.elapsed);
 }
 function buildCard(t){
@@ -882,14 +919,23 @@ function render(){
   $("qNote").textContent = q.n || "";
   $("qNote").classList.toggle("hidden", !q.n);
 
+  $("selectionHelp").textContent = isMultiple(q)
+    ? "Multiple answers · Select all correct options. Click a selected option again to remove it. Exact match required; no partial credit."
+    : "Single answer · Select one option.";
+  const selected = answerFor(i);
   const box = $("opts"); box.innerHTML = "";
   q.o.forEach((o, k) => {
-    const b = document.createElement("button");
-    b.className = "opt" + (st.answers[i] === k ? " sel" : "");
+    const b = document.createElement("label");
+    b.className = "opt" + (selected.includes(k) ? " sel" : "");
+    const input = document.createElement("input");
+    input.type = isMultiple(q) ? "checkbox" : "radio";
+    input.name = "question-options";
+    input.checked = selected.includes(k);
+    input.setAttribute("aria-label", L[k] + ". " + o);
+    input.onchange = () => selectAnswer(i, k);
     const l = document.createElement("span"); l.className = "l"; l.textContent = L[k];
     const t = document.createElement("span"); t.textContent = o;
-    b.append(l, t);
-    b.onclick = () => { st.answers[i] = k; save(); render(); };
+    b.append(input, l, t);
     box.appendChild(b);
   });
 
@@ -903,13 +949,13 @@ function render(){
 
   $("btnPrev").disabled = i === 0;
   $("btnNext").disabled = i === Q.length - 1;
-  $("btnClear").disabled = st.answers[i] === undefined;
+  $("btnClear").disabled = selected.length === 0;
 
   const g = $("grid"); g.innerHTML = "";
   Q.forEach((_, k) => {
     const b = document.createElement("button");
     b.textContent = k + 1;
-    b.className = (st.answers[k] !== undefined ? "ans " : "") + (k === i ? "cur " : "") + (st.marked[k] ? "mk" : "");
+    b.className = (answerFor(k).length ? "ans " : "") + (k === i ? "cur " : "") + (st.marked[k] ? "mk" : "");
     b.onclick = () => { st.cur = k; save(); render(); };
     g.appendChild(b);
   });
@@ -925,11 +971,12 @@ function buildTxt(){
   o += "Time taken: " + fmt(st.elapsed) + " (" + fmtLong(st.elapsed) + ")" + (s.time ? "  [time limit: " + s.time + " min]" : "") + "\n";
   o += "Total questions: " + Q.length + " | Answered: " + answeredN() + " | Unanswered: " + (Q.length - answeredN()) + " | Marked for review: " + markedN() + "\n\n";
   o += "INSTRUCTIONS FOR THE AI CHECKING THIS FILE:\n";
-  o += "- Work out the correct answer for every question below and compare it with \"My answer\".\n";
+  o += "- Work out the correct option or complete set of correct options for every question below and compare it with \"My answer\".\n";
+  o += "- Question types: single means choose exactly one option; multiple means select every correct option. Evaluate each multiple-answer question against the exact set of correct options: missing or extra options make the whole question wrong. Award no partial credit. Apply the wrong-answer penalty once per question, not per option. An empty selection is unanswered (0 marks).\n";
   o += "- Marking scheme: +" + num(s.mc) + " per correct answer, " + (s.neg ? "-" + num(s.neg) + " per wrong answer" : "no negative marking") + ", 0 for unanswered. Maximum total: " + num(maxMarks()) + ".";
   if (Q.some(q => q.m !== undefined && q.m !== null)) o += " Questions that show their own \"Marks\" value are worth that many marks instead.";
   o += "\n";
-  o += "- For every question I got wrong or left unanswered, give the correct option and a short explanation (show the working for numerical questions).\n";
+  o += "- For every question I got wrong or left unanswered, give the correct option(s) and a short explanation (show the working for numerical questions).\n";
   o += "- Some questions are marked for review and may include my own comment explaining my doubt. Please address those comments in your explanation, even if my answer was correct.\n";
   o += "- Some questions carry a [Note] saying text was restored or reconstructed because the source was corrupted. If the options of such a question look inconsistent, tell me.\n";
   o += "- Finish with my total score, a per-section score (" + SECS.map(x => x.name.split(" — ")[0] + ": Q" + x.from + "-" + x.to).join(", ") + "), a comment on my time taken, and the topics I should revise.\n";
@@ -943,11 +990,10 @@ function buildTxt(){
       if (sc.note) o += sc.note + "\n";
       lastSec = sc;
     }
-    o += "\nQ" + n + ". " + (q.t ? "[" + q.t + "] " : "") + (q.m !== undefined && q.m !== null ? "[Marks: " + num(q.m) + "] " : "") + q.q + "\n";
+    o += "\nQ" + n + ". [Type: " + (isMultiple(q) ? "multiple" : "single") + "] " + (q.t ? "[" + q.t + "] " : "") + (q.m !== undefined && q.m !== null ? "[Marks: " + num(q.m) + "] " : "") + q.q + "\n";
     q.o.forEach((x, k) => { o += "   " + L[k] + ". " + x + "\n"; });
     if (q.n) o += "   [" + q.n + "]\n";
-    const a = st.answers[i];
-    o += "   >> My answer: " + (a === undefined ? "NOT ANSWERED" : L[a]) + "\n";
+    o += "   >> My answer: " + answerText(i) + "\n";
     if (st.marked[i]){
       const c = (st.comments[i] || "").trim();
       o += "   >> Marked for review: YES\n";
@@ -956,7 +1002,7 @@ function buildTxt(){
   });
   o += "\n" + "=".repeat(60) + "\nSUMMARY OF MY ANSWERS\n";
   const row = [];
-  Q.forEach((_, i) => row.push("Q" + (i + 1) + ": " + (st.answers[i] === undefined ? "-" : L[st.answers[i]])));
+  Q.forEach((_, i) => row.push("Q" + (i + 1) + ": " + answerText(i, "-")));
   for (let i = 0; i < row.length; i += 5) o += row.slice(i, i + 5).join("   ") + "\n";
 
   const mk = Q.map((_, i) => i).filter(i => st.marked[i]);
@@ -964,7 +1010,7 @@ function buildTxt(){
   if (!mk.length) o += "None\n";
   mk.forEach(i => {
     const c = (st.comments[i] || "").trim();
-    o += "Q" + (i + 1) + " — my answer: " + (st.answers[i] === undefined ? "NOT ANSWERED" : L[st.answers[i]]) + " — comment: " + (c ? c.replace(/\r?\n/g, " ") : "(no comment)") + "\n";
+    o += "Q" + (i + 1) + " — my answer: " + answerText(i) + " — comment: " + (c ? c.replace(/\r?\n/g, " ") : "(no comment)") + "\n";
   });
   o += "\nTIME TAKEN: " + fmt(st.elapsed) + " (" + fmtLong(st.elapsed) + ")\n";
   return o;
@@ -1041,10 +1087,11 @@ $("btnCopy").onclick = async () => {
 };
 document.addEventListener("keydown", e => {
   if ($("test").classList.contains("hidden") || $("dlg").open) return;
-  if (e.target && (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT")) return;
-  if (e.key === "ArrowRight") $("btnNext").click();
-  else if (e.key === "ArrowLeft") $("btnPrev").click();
-  else if (/^[1-6]$/.test(e.key) && +e.key <= Q[st.cur].o.length){ st.answers[st.cur] = +e.key - 1; save(); render(); }
+  if (e.target && (e.target.tagName === "TEXTAREA" || (e.target.tagName === "INPUT" && !["checkbox", "radio"].includes(e.target.type)))) return;
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  if (e.key === "ArrowRight"){ e.preventDefault(); $("btnNext").click(); }
+  else if (e.key === "ArrowLeft"){ e.preventDefault(); $("btnPrev").click(); }
+  else if (/^[1-6]$/.test(e.key) && +e.key <= Q[st.cur].o.length){ e.preventDefault(); selectAnswer(st.cur, +e.key - 1); }
 });
 
 loadLib();
