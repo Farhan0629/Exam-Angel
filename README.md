@@ -8,7 +8,7 @@
 
 Take a built-in Computer Networks test, or generate a test with your preferred AI assistant and import it in plain text. Answer at your own pace, flag questions with notes, and export your attempt for feedback.
 
-> The application currently displays **Mock Test Studio** in its interface. Exam Angel is the repository name. The application lives in `index.html` and supports both single-answer and multiple-answer questions in the same test.
+> The application currently displays **Mock Test Studio** in its interface. Exam Angel is the repository name. The application lives in `index.html` and supports both single-answer and multiple-answer questions in the same test. Use this live link https://farhan0629.github.io/Exam-Angel/
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Import format](#mock-test-import-format) · [Privacy & limitations](#privacy--limitations) · [Deploy](#deploy-to-github-pages)
 
